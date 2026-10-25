@@ -104,56 +104,23 @@ export default function PitchLingoPro() {
     setLoading(true);
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        alert("Aviso: Chave da API Gemini não encontrada. Configure a variável NEXT_PUBLIC_GEMINI_API_KEY na Vercel.");
-        setLoading(false);
-        return;
-      }
-
-      // Chamada oficial à API do Gemini 1.5 Flash
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      // Chama a nossa API interna em vez de expor a chave no cliente
+      const response = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `You are an expert UEFA pro-license football coach and native English tactical assistant. 
-              Translate the following Portuguese football training instruction into professional, natural English commands used by coaches on the pitch (e.g., "Pass the ball" -> "Pass the ball!").
-              
-              Instruction in Portuguese: "${searchQuery}"
-              
-              Respond STRICTLY with a valid JSON object using this exact format, with no markdown formatting around it:
-              {
-                "english": "Natural pitch-side tactical command in English",
-                "phonetic": "Simple pronunciation guide for Brazilians",
-                "tacticalMeaning": "Brief explanation of the tactical goal in Portuguese",
-                "context": "Match moment in Portuguese"
-              }`
-            }]
-          }]
-        })
+        body: JSON.stringify({ query: searchQuery })
       });
 
       const data = await response.json();
       
-      if (data.error) {
-        throw new Error(data.error.message);
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao traduzir");
       }
 
-      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!textResponse) {
-        throw new Error("Sem resposta da IA");
-      }
-
-      const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsedData = JSON.parse(cleanJson);
-
-      setTranslationResult(parsedData);
+      setTranslationResult(data);
     } catch (err) {
       console.error(err);
-      alert("Erro ao traduzir com a IA. Verifique se a sua chave do Gemini na Vercel está correta e ativa.");
+      alert("Erro ao conectar com a IA: " + err.message);
     } finally {
       setLoading(false);
     }
