@@ -106,92 +106,55 @@ export default function PitchLingoPro() {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       
-      if (apiKey) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an expert professional football tactical assistant for coaches. 
-                Translate the following Portuguese football instruction into professional Tactical English used on the pitch.
-                
-                Instruction in Portuguese: "${searchQuery}"
-                
-                Respond STRICTLY in valid JSON format with this exact schema:
-                {
-                  "english": "Short and direct tactical command in English for pitch side",
-                  "phonetic": "Simplified pronunciation guide for Portuguese speakers reading out loud",
-                  "tacticalMeaning": "Brief explanation of the tactical impact in Portuguese",
-                  "context": "Ideal match moment in Portuguese"
-                }`
-              }]
-            }]
-          })
-        });
-
-        const data = await response.json();
-        if (!data.error && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          const textResponse = data.candidates[0].content.parts[0].text;
-          const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsedData = JSON.parse(cleanJson);
-          setTranslationResult(parsedData);
-          setLoading(false);
-          return;
-        }
+      if (!apiKey) {
+        alert("Aviso: Chave da API Gemini não encontrada. Configure a variável NEXT_PUBLIC_GEMINI_API_KEY na Vercel.");
+        setLoading(false);
+        return;
       }
 
-      // Sistema de Contingência Local refinado com termos autênticos de futebol
-      setTimeout(() => {
-        const queryLower = searchQuery.toLowerCase();
-        let result = {
-          english: "Move the ball quickly!",
-          phonetic: "Muv da bol quickli",
-          tacticalMeaning: "Agilizar a circulação da bola para evitar a dobra de marcação adversária.",
-          context: "Organização Ofensiva"
-        };
-
-        if (queryLower.includes("passe") || queryLower.includes("bola") || queryLower.includes("passa")) {
-          result = {
-            english: "Pass the ball!",
-            phonetic: "Pas da bol",
-            tacticalMeaning: "Comando direto para executar o passe limpo e dar seguimento à jogada.",
-            context: "Construção de Jogo"
-          };
-        } else if (queryLower.includes("press") || queryLower.includes("cima") || queryLower.includes("alto")) {
-          result = {
-            english: "Press high now!",
-            phonetic: "Pres rai nau",
-            tacticalMeaning: "Subir as linhas de marcação para sufocar a saída de bola do adversário.",
-            context: "Bloco Defensivo Alto"
-          };
-        } else if (queryLower.includes("marca") || queryLower.includes("homem") || queryLower.includes("acompanha")) {
-            result = {
-              english: "Track your runner!",
-              phonetic: "Trek ior raner",
-              tacticalMeaning: "Acompanhar rigorosamente a infiltração do jogador adversário no setor.",
-              context: "Transição Defensiva"
-            };
-        } else {
-          result = {
-            english: searchQuery.toUpperCase(),
-            phonetic: "Pronúncia tática direta",
-            tacticalMeaning: "Instrução personalizada aplicada diretamente no corredor de atuação.",
-            context: "Comando de Campo"
-          };
-        }
-
-        setTranslationResult(result);
-        setLoading(false);
-      }, 600);
-
-    } catch (err) {
-      setTranslationResult({
-        english: searchQuery.toUpperCase(),
-        phonetic: "Siga a pronúncia padrão",
-        tacticalMeaning: "Comando tático de beira de campo.",
-        context: "Instrução Direta"
+      // Chamada oficial à API do Gemini 1.5 Flash
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an expert UEFA pro-license football coach and native English tactical assistant. 
+              Translate the following Portuguese football training instruction into professional, natural English commands used by coaches on the pitch (e.g., "Pass the ball" -> "Pass the ball!").
+              
+              Instruction in Portuguese: "${searchQuery}"
+              
+              Respond STRICTLY with a valid JSON object using this exact format, with no markdown formatting around it:
+              {
+                "english": "Natural pitch-side tactical command in English",
+                "phonetic": "Simple pronunciation guide for Brazilians",
+                "tacticalMeaning": "Brief explanation of the tactical goal in Portuguese",
+                "context": "Match moment in Portuguese"
+              }`
+            }]
+          }]
+        })
       });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
+      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textResponse) {
+        throw new Error("Sem resposta da IA");
+      }
+
+      const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsedData = JSON.parse(cleanJson);
+
+      setTranslationResult(parsedData);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao traduzir com a IA. Verifique se a sua chave do Gemini na Vercel está correta e ativa.");
+    } finally {
       setLoading(false);
     }
   };
