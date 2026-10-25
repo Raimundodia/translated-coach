@@ -105,26 +105,29 @@ export default function PitchLingoPro() {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("API Key não configurada");
+        alert("A chave API do Gemini não está configurada!");
+        setLoading(false);
+        return;
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      // Atualizado para o modelo estável gemini-1.5-flash
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Você é um instrutor e assistente tático de futebol profissional para treinadores brasileiros.
-              Traduza a seguinte instrução/comando de futebol de Português para Inglês Tático Profissional.
+              text: `You are an expert professional football tactical assistant for coaches. 
+              Translate the following Portuguese football instruction/command into professional Tactical English used on the pitch.
               
-              Instrução: "${searchQuery}"
+              Instruction in Portuguese: "${searchQuery}"
               
-              Responda ESTRITAMENTE em formato JSON com o seguinte esquema:
+              Respond STRICTLY in valid JSON format with this exact schema (no markdown formatting inside or outside if possible, just the raw json or clean json):
               {
-                "english": "Tradução em inglês tático curto e direto para beira de campo",
-                "phonetic": "Guia de pronúncia simplificado para brasileiros lendo em voz alta",
-                "tacticalMeaning": "Breve explicação do impacto tático deste comando",
-                "context": "Momento ideal do jogo para usar (ex: Organização Defensiva, Transição, etc)"
+                "english": "Short and direct tactical command in English for pitch side",
+                "phonetic": "Simplified pronunciation guide for Portuguese speakers reading out loud",
+                "tacticalMeaning": "Brief explanation of the tactical impact in Portuguese",
+                "context": "Ideal match moment in Portuguese (e.g., Organização Defensiva, Transição, etc)"
               }`
             }]
           }]
@@ -132,6 +135,11 @@ export default function PitchLingoPro() {
       });
 
       const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
       const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -139,12 +147,8 @@ export default function PitchLingoPro() {
 
       setTranslationResult(parsedData);
     } catch (err) {
-      setTranslationResult({
-        english: searchQuery.toUpperCase(),
-        phonetic: "Siga a pronúncia padrão das palavras",
-        tacticalMeaning: "Tradução assistida em modo rápido de contingência.",
-        context: "Instrução Direta de Campo"
-      });
+      console.error(err);
+      alert("Erro ao conectar com a IA. Verifique se a chave da API está correta na Vercel.");
     } finally {
       setLoading(false);
     }
