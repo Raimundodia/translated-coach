@@ -12,16 +12,28 @@ export async function POST(request) {
       return NextResponse.json({ error: 'GEMINI_API_KEY não configurada no servidor' }, { status: 500 });
     }
 
-    // Alterado de v1beta para v1 para compatibilidade total com chaves atuais do Google AI Studio
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
+    // Lista de modelos para testar em ordem de prioridade
+    const modelsToTry = [
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-pro'
+    ];
+
+    let data = null;
+    let lastError = null;
+
+    // Tenta cada modelo até que um funcione com sucesso
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
               {
-                text: `You are an expert professional football tactical assistant for coaches. 
+                parts: [
+                  {
+                    text: `You are an expert professional football tactical assistant for coaches. 
 Translate the following Portuguese football instruction into professional, natural English commands used by coaches on the pitch (e.g., "Pass the ball" -> "Pass the ball!").
 
 Instruction in Portuguese: "${query}"
@@ -33,21 +45,32 @@ Respond STRICTLY with a valid JSON object using this exact format, with no markd
   "tacticalMeaning": "Brief explanation of the tactical goal in Portuguese",
   "context": "Match moment in Portuguese"
 }`
+                  }
+                ]
               }
             ]
-          }
-        ]
-      })
-    });
+          })
+        });
 
-    const data = await response.json();
-    if (data.error) {
-      throw new Error(data.error.message);
+        const result = await response.json();
+        if (!result.error && result.candidates) {
+          data = result;
+          break; // Sucesso! Encontrou um modelo compatível.
+        } else {
+          lastError = result.error?.message || "Erro desconhecido no modelo";
+        }
+      } catch (e) {
+        lastError = e.message;
+      }
+    }
+
+    if (!data) {
+      throw new Error(lastError || "Nenhum modelo Gemini compatível foi encontrado para esta chave.");
     }
 
     const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textResponse) {
-      throw new Error("Sem resposta da IA");
+      throw new Error("Sem resposta válida da IA");
     }
 
     const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
