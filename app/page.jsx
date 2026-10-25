@@ -107,7 +107,6 @@ export default function PitchLingoPro() {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       
       if (apiKey) {
-        // Tenta usar a API do Gemini se a chave estiver presente
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -142,7 +141,7 @@ export default function PitchLingoPro() {
         }
       }
 
-      // Sistema Inteligente de Contingência (Garante que nunca falhe e traga termos reais de futebol)
+      // Sistema de Contingência Local refinado com termos autênticos de futebol
       setTimeout(() => {
         const queryLower = searchQuery.toLowerCase();
         let result = {
@@ -152,11 +151,11 @@ export default function PitchLingoPro() {
           context: "Organização Ofensiva"
         };
 
-        if (queryLower.includes("passe") || queryLower.includes("bola")) {
+        if (queryLower.includes("passe") || queryLower.includes("bola") || queryLower.includes("passa")) {
           result = {
-            english: "Play the ball!",
-            phonetic: "Plei da bol",
-            tacticalMeaning: "Comando direto para acelerar a execução do passe limpo.",
+            english: "Pass the ball!",
+            phonetic: "Pas da bol",
+            tacticalMeaning: "Comando direto para executar o passe limpo e dar seguimento à jogada.",
             context: "Construção de Jogo"
           };
         } else if (queryLower.includes("press") || queryLower.includes("cima") || queryLower.includes("alto")) {
@@ -166,7 +165,7 @@ export default function PitchLingoPro() {
             tacticalMeaning: "Subir as linhas de marcação para sufocar a saída de bola do adversário.",
             context: "Bloco Defensivo Alto"
           };
-        } else if (queryLower.includes("marca") || queryLower.includes("homem")) {
+        } else if (queryLower.includes("marca") || queryLower.includes("homem") || queryLower.includes("acompanha")) {
             result = {
               english: "Track your runner!",
               phonetic: "Trek ior raner",
