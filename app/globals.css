@@ -8,7 +8,6 @@
   }
 }
 
-/* Custom scrollbar para as categorias do dicionário */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
